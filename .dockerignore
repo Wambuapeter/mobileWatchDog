@@ -1,0 +1,11 @@
+# Ignore the logs
+app/logs/
+# Ignore rabbitmq and nginx
+rabbitmq
+nginx
+
+# Ignore apk directory
+app/media/apk
+
+# Ignoring git folders
+.git

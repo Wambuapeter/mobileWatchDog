@@ -1,0 +1,54 @@
+version: "3.6"
+services:
+  web:
+    build:
+      context: ./
+    image: mobile_audit
+    env_file:
+      - ./.env.example
+    entrypoint: ["/web_entrypoint.sh"]
+    volumes:
+      - .:/app
+    expose:
+      - "8000"
+    restart: on-failure
+  nginx:
+    image: nginx:1.23.3-alpine@sha256:dd8a054d7ef030e94a6449783605d6c306c1f69c10c2fa06b66a030e0d1db793
+    ports:
+      - "8888:8888"
+    volumes:
+      - .:/app
+      - ./nginx/app.conf:/etc/nginx/conf.d/app.conf
+      - ./nginx/logs:/var/log/nginx
+    depends_on:
+      - web
+    restart: on-failure
+  rabbitmq:
+    image: rabbitmq:3.11.5-management-alpine@sha256:826a39d68330e7c380f527d0ac31e87999ade0afa6747e688c9d56989319a2c2
+    env_file:
+      - ./.env.example
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:-guest}
+    volumes:
+      - ./rabbitmq/logs/:/var/log/rabbitmq/
+    expose:
+      - "5672"
+    depends_on:
+      - web
+    restart: on-failure
+  worker:
+    image: mobile_audit
+    env_file:
+      - ./.env.example
+    entrypoint: ["/worker_entrypoint.sh"]
+    volumes:
+      - .:/app
+    links:
+      - rabbitmq
+      - web
+    depends_on:
+      - rabbitmq
+    restart: on-failure
+volumes:
+  db-data:
